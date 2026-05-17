@@ -586,10 +586,16 @@ main {
 }
 
 [data-animate],
-.hero-title .line,
-.route,
-.route-dot {
+.hero-title .line {
   will-change: transform, opacity;
+}
+
+.route {
+  will-change: stroke-dashoffset;
+}
+
+.route-dot {
+  will-change: opacity;
 }
 
 @media (max-width: 980px) {

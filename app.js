@@ -9,6 +9,18 @@
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const qs = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
 
+  function formatCounterValue(node, value) {
+    node.textContent = Math.round(value).toLocaleString("zh-CN");
+  }
+
+  function setCounterFinal(scope = document) {
+    qs("[data-counter]", scope).forEach((node) => {
+      const target = Number(node.dataset.to || "0");
+      formatCounterValue(node, target);
+      node.dataset.counted = "true";
+    });
+  }
+
   function drawRoute() {
     const route = document.querySelector(".route");
     const dot = document.querySelector(".route-dot");
@@ -36,6 +48,12 @@
         const point = path.getPointAtLength(length * state.progress);
         dot.setAttribute("cx", point.x);
         dot.setAttribute("cy", point.y);
+      },
+      onComplete: function () {
+        const point = path.getPointAtLength(length);
+        dot.setAttribute("cx", point.x);
+        dot.setAttribute("cy", point.y);
+        dot.setAttribute("r", "7");
       }
     });
 
@@ -47,18 +65,27 @@
     });
   }
 
-  function countUp(scope = document) {
+  function countUp(scope = document, options = {}) {
+    const force = Boolean(options.force);
+
     qs("[data-counter]", scope).forEach((node) => {
+      if (!force && node.dataset.counted === "true") return;
+
       const target = Number(node.dataset.to || "0");
       const state = { value: 0 };
-      node.textContent = "0";
+      node.dataset.counted = "true";
+      if (force) formatCounterValue(node, 0);
+
       animate(state, {
         value: target,
         duration: 1500,
         delay: 180,
         ease: "outCubic",
         onUpdate: function () {
-          node.textContent = Math.round(state.value).toLocaleString("zh-CN");
+          formatCounterValue(node, state.value);
+        },
+        onComplete: function () {
+          formatCounterValue(node, target);
         }
       });
     });
@@ -162,27 +189,20 @@
   }
 
   function ambientMotion() {
-    animate(".route-dot", {
-      scale: [1, 1.32],
-      opacity: [0.86, 1],
-      duration: 950,
-      loop: true,
-      alternate: true,
-      ease: "inOutSine"
-    });
-
-    animate(".hero-board", {
-      y: [0, -8],
-      duration: 3600,
-      loop: true,
-      alternate: true,
-      ease: "inOutSine"
+    qs(".track-labels text").forEach((label, index) => {
+      animate(label, {
+        opacity: [0.62, 1],
+        duration: 900,
+        delay: 2200 + index * 80,
+        ease: "outCubic"
+      });
     });
   }
 
   function replay() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     qs("[data-counter]").forEach((node) => {
+      delete node.dataset.counted;
       node.textContent = "0";
     });
     intro();
@@ -190,7 +210,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     if (reduceMotion) {
-      countUp();
+      setCounterFinal();
       return;
     }
 
